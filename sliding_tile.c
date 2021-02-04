@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define N 4
+#define N 8
 #define NxN (N*N)
 #define TRUE 1
 #define FALSE 0
@@ -9,16 +9,16 @@
 struct node {
 	int tiles[N][N];
 	int f, g, h;
-	short zero_row, zero_column;	/* location (row and colum) of blank tile 0 */
+	short zero_row, zero_column;
 	struct node *next;
-	struct node *parent;			/* used to trace back the solution */
+	struct node *parent;	
 };
 
 int goal_rows[NxN];
 int goal_columns[NxN];
 struct node *start,*goal;
 struct node *open = NULL, *closed = NULL;
-struct node *succ_nodes[4];
+struct node *succ_nodes[N];
 
 void print_a_node(struct node *pnode) {
 	int i,j;
@@ -118,25 +118,19 @@ void merge_to_open() {
 		{
 			temp1->next = temp;
 		}
-		
 	}
-
 }
 
-
-
-/*swap two tiles in a node*/
+/* swap two tiles */
 void swap(int row1,int column1,int row2,int column2, struct node * pnode){
 	int tile = pnode->tiles[row1][column1];
 	pnode->tiles[row1][column1]=pnode->tiles[row2][column2];
 	pnode->tiles[row2][column2]=tile;
 }
 
-/*update the f,g,h function values for a node */
 void update_fgh(struct node *pnode){
 	pnode->h=0;
 	pnode->g +=1;
-	//ideal spot is tile[num%4][num-(4*(num%4)-1)
 	for (int i=0;i<N;i++)
 	{
 		for (int j=0;j<N;j++)
@@ -177,9 +171,7 @@ void move_left(struct node * pnode)
         	pnode->zero_column--;
 }
 
-/* expand a node, get its children nodes, and organize the children nodes using
- * array succ_nodes.
- */
+/* expand node, get child nodes */
 void expand(struct node *selected) {
 	if (selected->zero_column<N-1)
 	{	
@@ -231,11 +223,6 @@ int nodes_same(struct node *a,struct node *b) {
 	return flg;}
 
 
-/* Filtering. Some nodes in succ_nodes may already be included in either open 
- * or closed list. Remove them. It is important to reduce execution time.
- * This function checks the (i)th node in succ_nodes array. You must call this
- & function in a loop to check all the nodes in succ_nodes.
- */ 
 void filter(int i, struct node *pnode_list){
 	struct node* head = pnode_list;
 	while (head && succ_nodes[i])
@@ -249,20 +236,20 @@ void filter(int i, struct node *pnode_list){
 }
 
 
-int main(int argc,char **argv) {
+int main(int argc,char *argv[]) {
 	int iter,cnt;
 	struct node *copen, *cp, *solution_path;
 	int ret, i, pathlen=0, index[N-1];
-	
+
 	solution_path=NULL;
-	start=initialize(argv);	/* init initial and goal states */
+	start=initialize(argv);
 	open=start;
 	iter=0;
-	while (open!=NULL) {	/* Termination cond with a solution is tested in expand. */
+	while (open!=NULL) {
 		copen=open;
-		open=open->next;  /* get the first node from open to expand */
-		if(nodes_same(copen,goal)){ /* goal is found */
-			do{ /* trace back and add the nodes on the path to a list */
+		open=open->next;
+		if(nodes_same(copen,goal)){
+			do{
 				copen->next=solution_path;
 				solution_path=copen;
 				copen=copen->parent;
@@ -270,7 +257,7 @@ int main(int argc,char **argv) {
 			} while(copen!=NULL);
 			printf("Path (length=%d):\n", pathlen); 
 			copen=solution_path;
-			 /* print out the nodes on the list */
+
 			while(solution_path != NULL)
 			{
 				print_a_node(solution_path);
@@ -278,21 +265,18 @@ int main(int argc,char **argv) {
 			}
 			break;
 		}
-		expand(copen);       /* Find new successors */
-		for(i=0;i<4;i++){
+		expand(copen);
+		for(i=0;i<N;i++){
 			filter(i,open);
 			filter(i,closed);
 		}
-		merge_to_open(); /* New open list */
+		merge_to_open();
 		copen->next=closed;
-		closed=copen;		/* New closed */
-		/* print out something so that you know your 
-		 * program is still making progress 
-		 */
+		closed=copen;
 		iter++;
 		if(iter %20000 == 0)
 		{
-			printf("No solution.\n");
+			printf("No solution found in 20000 iterations.\n");
 			return 0;
 		}	
 	}
